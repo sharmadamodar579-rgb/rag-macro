@@ -1,2 +1,6 @@
 # rag-macro
-AI student management system 
+AI student management system
+
+
+hello its me soham
+
