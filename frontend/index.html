@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI College Study Assistant</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="navbar">
+        <div class="logo">
+            <span class="logo-icon">📚</span>
+            <h1>AI Study Assistant</h1>
+        </div>
+        <nav>
+            <a href="index.html" class="nav-link active">Home</a>
+            <a href="login.html" class="nav-link">Login</a>
+            <a href="dashboard.html" class="btn btn-primary">Dashboard</a>
+        </nav>
+    </header>
+
+    <main class="hero-section">
+        <div class="hero-content">
+            <span class="badge">AI-Powered RAG Learning</span>
+            <h2>Master Your College Notes with Intelligent AI</h2>
+            <p>Upload your lecture notes, textbooks, and PDFs. Ask questions, generate summaries, and test your knowledge with MCQs powered by Retrieval-Augmented Generation.</p>
+            
+            <div class="hero-actions">
+                <a href="dashboard.html" class="btn btn-primary">Get Started</a>
+                <button id="check-api-btn" class="btn btn-secondary">Check Backend Status</button>
+            </div>
+
+            <!-- API Status Indicator -->
+            <div id="api-status-card" class="status-card">
+                <span class="status-dot"></span>
+                <span id="api-status-text">Checking backend connection...</span>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

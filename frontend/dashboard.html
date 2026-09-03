@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - AI College Study Assistant</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="dashboard-body">
+    <!-- Navigation Bar -->
+    <header class="navbar">
+        <div class="logo">
+            <span class="logo-icon">📚</span>
+            <h1>AI Study Assistant</h1>
+        </div>
+        <nav>
+            <a href="index.html" class="nav-link">Home</a>
+            <a href="dashboard.html" class="nav-link active">Dashboard</a>
+            <a href="login.html" class="btn btn-secondary">Logout</a>
+        </nav>
+    </header>
+
+    <!-- Main Workspace Layout -->
+    <div class="app-layout">
+        <!-- Sidebar: Upload & Documents List -->
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <h3>Upload Notes</h3>
+                <div class="upload-zone" id="upload-dropzone">
+                    <span class="upload-icon">📄</span>
+                    <p>Drag & drop PDF notes here or <span class="highlight">browse</span></p>
+                    <input type="file" id="pdf-file-input" accept=".pdf" style="display: none;">
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>My Documents</h3>
+                <div id="document-list" class="document-list">
+                    <p class="empty-state">No documents uploaded yet.</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat / Q&A Area -->
+        <main class="chat-container">
+            <div class="chat-header">
+                <div>
+                    <h2>Study Q&A Assistant</h2>
+                    <p class="subtitle">Ask any question related to your uploaded course material</p>
+                </div>
+                <div class="chat-actions">
+                    <button class="btn btn-sm btn-outline" disabled>Generate Summary</button>
+                    <button class="btn btn-sm btn-outline" disabled>Generate MCQs</button>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chat-messages">
+                <div class="message ai-message">
+                    <div class="avatar">🤖</div>
+                    <div class="message-content">
+                        <p>Hello! Once you upload your study material or PDFs, I will help answer your questions, summarize key concepts, and generate practice questions!</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Ask a question about your study material..." autocomplete="off">
+                <button id="send-btn" class="btn btn-primary">Send</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script src="js/chat.js"></script>
+</body>
+</html>

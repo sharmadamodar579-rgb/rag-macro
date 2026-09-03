@@ -1,0 +1,19 @@
+# Core Backend Framework & Utilities (Current Setup)
+Flask>=3.0.0
+Flask-Cors>=4.0.0
+python-dotenv>=1.0.0
+
+# Future Database & ORM (for later steps)
+# Flask-SQLAlchemy>=3.1.0
+
+# Future Document & PDF Processing (for later steps)
+# pypdf>=4.0.0
+
+# Future Vector Database & RAG (for later steps)
+# faiss-cpu>=1.8.0
+# langchain>=0.1.0
+# langchain-community>=0.0.20
+# langchain-google-genai>=1.0.0
+
+# Future AI / LLM (for later steps)
+# google-generativeai>=0.4.0

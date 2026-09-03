@@ -1,0 +1,40 @@
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+
+# Python Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+
+# Python Bytecode and Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Uploaded Files & User Content (preserve directory with .gitkeep)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# FAISS Vector Database Indexes (preserve directory with .gitkeep)
+backend/vector_store/*
+!backend/vector_store/.gitkeep
+
+# SQLite Database Files
+*.db
+*.sqlite
+*.sqlite3
+backend/models/*.db
+
+# Editor & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# AI Assistant Context / Memory
+brain.md
