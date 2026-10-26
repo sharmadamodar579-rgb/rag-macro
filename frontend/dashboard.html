@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - AI College Study Assistant</title>
+    <title>FAISS Semantic Retrieval - AI College Study Assistant</title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-body">
-    <!-- Navigation Bar -->
+    <!-- Top Navigation -->
     <header class="navbar">
         <div class="logo">
             <span class="logo-icon">📚</span>
@@ -17,61 +17,380 @@
         <nav>
             <a href="index.html" class="nav-link">Home</a>
             <a href="dashboard.html" class="nav-link active">Dashboard</a>
-            <a href="login.html" class="btn btn-secondary">Logout</a>
+            <div id="user-nav-area" class="user-nav-box">
+                <span id="user-display-name" class="user-profile-badge hidden">Student</span>
+                <button id="logout-btn" class="btn btn-secondary btn-sm hidden">Logout</button>
+                <a href="login.html" id="login-nav-btn" class="btn btn-secondary">Login</a>
+            </div>
         </nav>
     </header>
 
-    <!-- Main Workspace Layout -->
-    <div class="app-layout">
-        <!-- Sidebar: Upload & Documents List -->
-        <aside class="sidebar">
-            <div class="sidebar-section">
-                <h3>Upload Notes</h3>
-                <div class="upload-zone" id="upload-dropzone">
-                    <span class="upload-icon">📄</span>
-                    <p>Drag & drop PDF notes here or <span class="highlight">browse</span></p>
-                    <input type="file" id="pdf-file-input" accept=".pdf" style="display: none;">
-                </div>
-            </div>
+    <!-- Main Workspace -->
+    <main class="dashboard-container">
+        <div class="container-header">
+            <h2>⚡ AI Study Assistant & Document Hub</h2>
+            <p class="subtitle">Upload study PDFs, manage your document library, and chat with your materials using RAG.</p>
+        </div>
 
-            <div class="sidebar-section">
-                <h3>My Documents</h3>
-                <div id="document-list" class="document-list">
-                    <p class="empty-state">No documents uploaded yet.</p>
+        <div class="dashboard-grid">
+            <!-- Left Card: Upload & Document Library -->
+            <section class="card upload-card">
+                <div class="card-header">
+                    <h3>1. Upload & Study Documents</h3>
                 </div>
-            </div>
-        </aside>
 
-        <!-- Main Chat / Q&A Area -->
-        <main class="chat-container">
-            <div class="chat-header">
+                <div class="upload-dropzone" id="dropzone">
+                    <span class="upload-icon">📑</span>
+                    <p class="dropzone-text">Drag and drop your PDF here, or <span class="highlight">browse</span></p>
+                    <p class="dropzone-subtext">Supports .pdf files up to 16MB</p>
+                    <input type="file" id="pdf-file-input" accept=".pdf" class="file-input-hidden">
+                </div>
+
+                <!-- Selected File Display -->
+                <div id="selected-file-info" class="selected-file-info hidden">
+                    <span class="file-icon">📎</span>
+                    <span id="selected-file-name" class="file-name">filename.pdf</span>
+                    <span id="selected-file-size" class="file-size">(0 KB)</span>
+                    <button type="button" id="remove-file-btn" class="btn-icon" title="Remove file">✕</button>
+                </div>
+
+                <!-- Upload Trigger Button -->
+                <div class="upload-actions">
+                    <button id="upload-btn" class="btn btn-primary btn-block" disabled>
+                        <span>Upload, Chunk & Index</span>
+                    </button>
+                </div>
+
+                <!-- Status & Alerts -->
+                <div id="status-box" class="status-box hidden">
+                    <div class="status-icon" id="status-icon">⏳</div>
+                    <div class="status-content">
+                        <p id="status-title" class="status-title">Processing...</p>
+                        <p id="status-details" class="status-details"></p>
+                    </div>
+                </div>
+
+                <!-- Document Library List -->
+                <div class="doc-library-section">
+                    <div class="card-header" style="margin-top: 1.5rem; padding-bottom: 0.5rem;">
+                        <h4>📂 My Document Library</h4>
+                        <span class="badge badge-info" id="doc-library-count">0 Docs</span>
+                    </div>
+                    <div id="doc-library-list" class="doc-list">
+                        <p class="text-muted" style="font-size: 0.85rem; padding: 0.5rem 0;">No documents uploaded yet.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Card: Extracted Content Viewer -->
+            <section class="card results-card">
+                <div class="card-header">
+                    <h3>2. Active Document Chunks & FAISS Index</h3>
+                    <div id="stats-badges" class="stats-badges hidden">
+                        <span class="badge badge-info" id="badge-pages">0 Pages</span>
+                        <span class="badge badge-accent" id="badge-chunks">0 Chunks</span>
+                        <span class="badge badge-warning" id="badge-embeddings">Embeddings</span>
+                        <span class="badge badge-purple" id="badge-faiss">FAISS Index</span>
+                    </div>
+                </div>
+
+                <!-- Empty State Placeholder -->
+                <div id="empty-results-state" class="empty-results-state">
+                    <span class="empty-icon">🔍</span>
+                    <h4>No Document Selected</h4>
+                    <p>Select a document from your library on the left or upload a new PDF to view extracted content.</p>
+                </div>
+
+                <!-- Results Content (hidden until upload/selection completes) -->
+                <div id="results-wrapper" class="results-wrapper hidden">
+                    <!-- Document Metadata Summary -->
+                    <div class="doc-meta-bar">
+                        <div>
+                            <strong id="meta-filename">filename.pdf</strong>
+                            <p id="meta-doc-id" class="text-muted" style="font-family: monospace; font-size: 0.8rem;"></p>
+                            <p id="meta-status-message" class="text-muted"></p>
+                        </div>
+                        <div class="doc-meta-actions" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                            <button id="generate-summary-btn" class="btn btn-sm btn-primary">⚡ Generate Summary</button>
+                            <button id="generate-mcqs-btn-top" class="btn btn-sm btn-accent">🎯 Practice MCQs</button>
+                            <button id="generate-questions-btn-top" class="btn btn-sm btn-warning">⭐ Important Questions</button>
+                            <button id="copy-text-btn" class="btn btn-sm btn-secondary">📋 Copy Text</button>
+                        </div>
+                    </div>
+
+                    <!-- View Mode Tabs -->
+                    <div class="view-tabs">
+                        <button class="tab-btn active" data-tab="summary-view">📝 AI Study Summary</button>
+                        <button class="tab-btn" data-tab="mcqs-view">🎯 Practice MCQs</button>
+                        <button class="tab-btn" data-tab="questions-view">⭐ Important Questions</button>
+                        <button class="tab-btn" data-tab="chunks-view">RAG Chunks Preview</button>
+                        <button class="tab-btn" data-tab="pages-view">Page-by-Page View</button>
+                        <button class="tab-btn" data-tab="full-view">Full Text View</button>
+                    </div>
+
+                    <!-- Tab 0: AI Study Summary -->
+                    <div id="summary-view" class="tab-content active">
+                        <div id="summary-empty-prompt" class="summary-empty-prompt">
+                            <span style="font-size: 2rem; margin-bottom: 0.5rem; display: block;">📑</span>
+                            <p>Generate a structured college study summary with key concepts, definitions, and exam points.</p>
+                            <button id="generate-summary-btn-inner" class="btn btn-primary" style="margin-top: 0.75rem;">⚡ Generate Summary</button>
+                        </div>
+                        <div id="summary-loading" class="status-box hidden" style="margin-top: 1rem;">
+                            <div class="status-icon">⏳</div>
+                            <div class="status-content">
+                                <p class="status-title">Generating Study Summary with Gemini...</p>
+                                <p class="status-details">Synthesizing overview, key concepts, definitions, and revision points.</p>
+                            </div>
+                        </div>
+                        <div id="summary-content-wrapper" class="summary-content-wrapper hidden">
+                            <div class="summary-toolbar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span class="badge badge-accent" id="summary-strategy-badge">Direct Summary</span>
+                                    <span class="badge badge-info" id="summary-pages-badge">0 Pages</span>
+                                </div>
+                                <button id="copy-summary-btn" class="btn btn-sm btn-secondary">📋 Copy Summary</button>
+                            </div>
+                            <div id="summary-text-body" class="summary-text-body markdown-body"></div>
+                            <div id="summary-sources-container" class="sources-container" style="margin-top: 1.25rem;">
+                                <span class="sources-label">📚 Source References:</span>
+                                <div id="summary-sources-list" style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 0.5: Practice MCQs & Quiz -->
+                    <div id="mcqs-view" class="tab-content">
+                        <!-- MCQ Configuration Bar -->
+                        <div class="mcq-config-bar">
+                            <div class="mcq-config-inputs">
+                                <div class="config-group">
+                                    <label for="mcq-count-select">Questions:</label>
+                                    <select id="mcq-count-select" class="form-select">
+                                        <option value="5" selected>5 Questions</option>
+                                        <option value="10">10 Questions</option>
+                                        <option value="15">15 Questions</option>
+                                        <option value="20">20 Questions</option>
+                                    </select>
+                                </div>
+                                <div class="config-group">
+                                    <label for="mcq-difficulty-select">Difficulty:</label>
+                                    <select id="mcq-difficulty-select" class="form-select">
+                                        <option value="easy">Easy (Definitions & Recall)</option>
+                                        <option value="medium" selected>Medium (Concepts & Mechanisms)</option>
+                                        <option value="hard">Hard (Analysis & Distinctions)</option>
+                                        <option value="mixed">Mixed (All Levels)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button id="generate-mcqs-btn" class="btn btn-primary">⚡ Generate Quiz</button>
+                        </div>
+
+                        <!-- MCQ Empty State -->
+                        <div id="mcqs-empty-prompt" class="summary-empty-prompt" style="margin-top: 1rem;">
+                            <span style="font-size: 2rem; margin-bottom: 0.5rem; display: block;">🎯</span>
+                            <p>Generate grounded practice questions tailored to this document to test your knowledge.</p>
+                        </div>
+
+                        <!-- MCQ Loading State -->
+                        <div id="mcqs-loading" class="status-box hidden" style="margin-top: 1rem;">
+                            <div class="status-icon">⏳</div>
+                            <div class="status-content">
+                                <p class="status-title">Generating Practice MCQs with Gemini...</p>
+                                <p class="status-details">Extracting key concepts, plausible distractors, and source page citations.</p>
+                            </div>
+                        </div>
+
+                        <!-- Interactive Quiz Workspace -->
+                        <div id="quiz-wrapper" class="quiz-wrapper hidden" style="margin-top: 1.25rem;">
+                            <!-- Quiz Status Header -->
+                            <div class="quiz-header">
+                                <div>
+                                    <span class="quiz-progress-text" id="quiz-progress-text">Question 1 of 5</span>
+                                    <span class="badge badge-accent" id="quiz-difficulty-badge" style="margin-left: 0.5rem;">Medium</span>
+                                </div>
+                                <div class="quiz-score-badge" id="quiz-score-display">Score: 0 / 0</div>
+                            </div>
+
+                            <!-- Active Question Card -->
+                            <div class="quiz-question-card">
+                                <h4 id="quiz-question-title" class="quiz-question-title">Question text here...</h4>
+                                
+                                <div id="quiz-options-container" class="quiz-options-container">
+                                    <!-- Options rendered dynamically -->
+                                </div>
+
+                                <!-- Feedback & Explanation Banner -->
+                                <div id="quiz-feedback-box" class="quiz-feedback-box hidden">
+                                    <div class="feedback-header" id="feedback-header">
+                                        <span id="feedback-icon">✅</span>
+                                        <strong id="feedback-verdict">Correct!</strong>
+                                    </div>
+                                    <p id="feedback-explanation" class="feedback-explanation"></p>
+                                    <div id="feedback-source" class="feedback-source">
+                                        <span class="source-tag" id="feedback-source-tag">📄 Document.pdf (Page 1)</span>
+                                    </div>
+                                </div>
+
+                                <!-- Quiz Navigation Buttons -->
+                                <div class="quiz-nav-bar">
+                                    <button id="quiz-prev-btn" class="btn btn-secondary btn-sm" disabled>◀ Previous</button>
+                                    <div style="display: flex; gap: 0.5rem;">
+                                        <button id="quiz-restart-btn" class="btn btn-secondary btn-sm">🔄 Restart Quiz</button>
+                                        <button id="quiz-next-btn" class="btn btn-primary btn-sm">Next ▶</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 0.7: Important Questions & Exam Revision -->
+                    <div id="questions-view" class="tab-content">
+                        <!-- Questions Configuration Bar -->
+                        <div class="mcq-config-bar">
+                            <div class="mcq-config-inputs">
+                                <div class="config-group">
+                                    <label for="question-count-select">Questions:</label>
+                                    <select id="question-count-select" class="form-select">
+                                        <option value="5">5 Questions</option>
+                                        <option value="10" selected>10 Questions</option>
+                                        <option value="15">15 Questions</option>
+                                        <option value="20">20 Questions</option>
+                                    </select>
+                                </div>
+                                <div class="config-group">
+                                    <label for="question-type-select">Type:</label>
+                                    <select id="question-type-select" class="form-select">
+                                        <option value="mixed" selected>Mixed (Short, Long, Conceptual)</option>
+                                        <option value="short">Short Answer</option>
+                                        <option value="long">Long / Descriptive</option>
+                                        <option value="conceptual">Conceptual & Analytical</option>
+                                        <option value="definition">Definitions & Terminology</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button id="generate-questions-btn" class="btn btn-warning">⚡ Generate Questions</button>
+                        </div>
+
+                        <!-- Questions Empty State -->
+                        <div id="questions-empty-prompt" class="summary-empty-prompt" style="margin-top: 1rem;">
+                            <span style="font-size: 2rem; margin-bottom: 0.5rem; display: block;">⭐</span>
+                            <p>Identify high-priority exam questions and key revision topics from this document.</p>
+                        </div>
+
+                        <!-- Questions Loading State -->
+                        <div id="questions-loading" class="status-box hidden" style="margin-top: 1rem;">
+                            <div class="status-icon">⏳</div>
+                            <div class="status-content">
+                                <p class="status-title">Generating Important Exam Questions with Gemini...</p>
+                                <p class="status-details">Analyzing core concepts, ranking revision priority, and mapping source pages.</p>
+                            </div>
+                        </div>
+
+                        <!-- Questions Results Container -->
+                        <div id="questions-content-wrapper" class="questions-content-wrapper hidden" style="margin-top: 1.25rem;">
+                            <div class="summary-toolbar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span class="badge badge-warning" id="questions-count-badge">0 Questions</span>
+                                    <span class="badge badge-info" id="questions-type-badge">Mixed</span>
+                                </div>
+                                <button id="copy-questions-btn" class="btn btn-sm btn-secondary">📋 Copy All Questions</button>
+                            </div>
+
+                            <div id="questions-list-container" class="questions-list-container">
+                                <!-- Rendered priority groups and question cards -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 1: RAG Chunks View -->
+                    <div id="chunks-view" class="tab-content">
+                        <div id="chunks-container" class="chunks-container">
+                            <!-- Chunk cards rendered dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Tab 2: Page-by-Page View -->
+                    <div id="pages-view" class="tab-content">
+                        <div id="pages-container" class="pages-container">
+                            <!-- Page cards rendered dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Tab 3: Full Text View -->
+                    <div id="full-view" class="tab-content">
+                        <textarea id="full-text-area" class="full-text-area" readonly placeholder="Extracted text will appear here..."></textarea>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Section 3: AI Study Assistant Q&A (RAG + Gemini) -->
+        <section id="search-section" class="card search-card hidden" style="margin-top: 2rem;">
+            <div class="card-header">
                 <div>
-                    <h2>Study Q&A Assistant</h2>
-                    <p class="subtitle">Ask any question related to your uploaded course material</p>
-                </div>
-                <div class="chat-actions">
-                    <button class="btn btn-sm btn-outline" disabled>Generate Summary</button>
-                    <button class="btn btn-sm btn-outline" disabled>Generate MCQs</button>
+                    <h3>🤖 3. Ask AI Study Assistant (RAG Pipeline)</h3>
+                    <p class="subtitle" style="margin-top: 0.2rem;">
+                        Ask any question about your active document. FAISS retrieves relevant context and Google Gemini generates a grounded answer with source citations.
+                    </p>
                 </div>
             </div>
 
-            <div class="chat-messages" id="chat-messages">
-                <div class="message ai-message">
-                    <div class="avatar">🤖</div>
-                    <div class="message-content">
-                        <p>Hello! Once you upload your study material or PDFs, I will help answer your questions, summarize key concepts, and generate practice questions!</p>
+            <div class="search-form">
+                <div class="search-input-group">
+                    <input type="text" id="search-query-input" placeholder="e.g., What is process scheduling and round robin?" autocomplete="off">
+                    <button id="search-btn" class="btn btn-primary">Ask AI Assistant</button>
+                </div>
+            </div>
+
+            <!-- Search Status & Results -->
+            <div id="search-status" class="status-box hidden" style="margin-top: 1rem;">
+                <div class="status-icon" id="search-status-icon">⏳</div>
+                <div class="status-content">
+                    <p id="search-status-text" class="status-title">Retrieving context & generating answer with Gemini...</p>
+                </div>
+            </div>
+
+            <!-- AI Generated Answer Card -->
+            <div id="ai-answer-wrapper" class="hidden" style="margin-top: 1.5rem;">
+                <div class="ai-answer-card">
+                    <div class="ai-answer-header">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="font-size: 1.2rem;">✨</span>
+                            <strong>Latest AI Generated Answer</strong>
+                        </div>
+                        <span class="badge badge-accent" id="ai-status-badge">Grounded RAG</span>
+                    </div>
+                    <div id="ai-answer-text" class="ai-answer-body"></div>
+                    <div id="ai-sources-container" class="sources-container hidden">
+                        <span class="sources-label">📚 Sources:</span>
+                        <div id="ai-sources-list" style="display: flex; flex-wrap: wrap; gap: 0.4rem;"></div>
                     </div>
                 </div>
             </div>
 
-            <div class="chat-input-area">
-                <input type="text" id="chat-input" placeholder="Ask a question about your study material..." autocomplete="off">
-                <button id="send-btn" class="btn btn-primary">Send</button>
+            <!-- Conversation History Thread -->
+            <div id="chat-history-section" class="hidden" style="margin-top: 1.5rem;">
+                <div class="card-header" style="padding-bottom: 0.5rem; margin-bottom: 0.75rem;">
+                    <h4>💬 Conversation History</h4>
+                    <span class="badge badge-info" id="chat-history-count">0 Messages</span>
+                </div>
+                <div id="chat-history-wrapper" class="chat-history-wrapper">
+                    <!-- Message bubbles rendered here -->
+                </div>
             </div>
-        </main>
-    </div>
+
+            <div id="search-results-wrapper" class="search-results-wrapper hidden" style="margin-top: 1.5rem;">
+                <div class="search-results-header">
+                    <h4>Retrieved Context Chunks (FAISS)</h4>
+                    <span class="badge badge-info" id="search-result-count">0 Results</span>
+                </div>
+                <div id="search-results-container" class="search-results-container">
+                    <!-- Retrieved chunk cards rendered here -->
+                </div>
+            </div>
+        </section>
+    </main>
 
     <script src="js/main.js"></script>
-    <script src="js/chat.js"></script>
 </body>
 </html>

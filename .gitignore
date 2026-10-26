@@ -9,19 +9,24 @@ env/
 ENV/
 .venv/
 
-# Python Bytecode and Cache
+# Python Bytecode, Distribution & Cache
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .pytest_cache/
+dist/
+build/
+*.egg-info/
 
-# Uploaded Files & User Content (preserve directory with .gitkeep)
-backend/uploads/*
+# User Uploaded Documents (ignore dynamically uploaded files, preserve test fixtures and .gitkeep)
+backend/uploads/doc_*
+backend/uploads/*.tmp
 !backend/uploads/.gitkeep
 
-# FAISS Vector Database Indexes (preserve directory with .gitkeep)
-backend/vector_store/*
+# FAISS Vector Database Indexes (ignore generated indexes, preserve .gitkeep)
+backend/vector_store/doc_*
+backend/vector_store/test_*
 !backend/vector_store/.gitkeep
 
 # SQLite Database Files
@@ -36,5 +41,6 @@ backend/models/*.db
 .DS_Store
 Thumbs.db
 
-# AI Assistant Context / Memory
-brain.md
+# Distributable Archives
+*.zip
+*.tar.gz
