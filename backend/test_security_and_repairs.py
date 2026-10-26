@@ -192,6 +192,31 @@ class TestSecurityAndRepairs(unittest.TestCase):
         self.assertEqual(res.headers.get('X-Frame-Options'), 'SAMEORIGIN')
         self.assertEqual(res.headers.get('X-XSS-Protection'), '1; mode=block')
 
+    # 7. Scanned PDF Chat Rejection
+    def test_07_scanned_pdf_chat_returns_clear_error(self):
+        """Verify chatting with a document that has 0 chunks returns a clear 400."""
+        self.register_and_login()
+        # Upload scanned PDF
+        scanned_path = os.path.join(UPLOADS_DIR, 'multipage_notes.pdf')
+        with open(scanned_path, 'rb') as f:
+            scanned_bytes = f.read()
+
+        up_res = self.client.post('/api/documents/upload',
+            data={'file': (io.BytesIO(scanned_bytes), 'scanned_lecture.pdf')},
+            content_type='multipart/form-data'
+        )
+        doc_id = up_res.get_json()['document_id']
+
+        # Attempt to chat with this scanned document
+        chat_res = self.client.post('/api/chat', json={
+            'document_id': doc_id,
+            'question': 'Summarize chapter 1'
+        })
+        self.assertEqual(chat_res.status_code, 400)
+        chat_data = chat_res.get_json()
+        self.assertFalse(chat_data['success'])
+        self.assertIn('0 indexed text chunks', chat_data['error'])
+
 
 if __name__ == '__main__':
     unittest.main()

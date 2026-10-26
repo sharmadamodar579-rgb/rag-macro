@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import wraps
 from typing import Optional
 
@@ -30,6 +30,11 @@ Base = declarative_base()
 db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False))
 
 
+def get_utc_now():
+    """Return timezone-aware UTC datetime."""
+    return datetime.now(timezone.utc)
+
+
 class User(Base):
     """
     User model representing registered student accounts.
@@ -40,7 +45,7 @@ class User(Base):
     username = Column(String(80), unique=True, nullable=False, index=True)
     email = Column(String(120), unique=True, nullable=False, index=True)
     password_hash = Column(String(256), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=get_utc_now, nullable=False)
 
     # Relationships
     documents = relationship("Document", back_populates="user", cascade="all, delete-orphan")
@@ -80,7 +85,7 @@ class Document(Base):
     filename = Column(String(255), nullable=False)
     filepath = Column(String(512), nullable=False)
     file_hash = Column(String(64), nullable=True, index=True)
-    uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    uploaded_at = Column(DateTime, default=get_utc_now, nullable=False)
     processed = Column(Boolean, default=False, nullable=False)
     chunk_count = Column(Integer, default=0, nullable=False)
 
@@ -111,7 +116,7 @@ class Chat(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     document_id = Column(String(64), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=get_utc_now, nullable=False)
 
     # Relationships
     user = relationship("User", back_populates="chats")
@@ -142,7 +147,7 @@ class Message(Base):
     chat_id = Column(Integer, ForeignKey("chats.id", ondelete="CASCADE"), nullable=False, index=True)
     role = Column(String(20), nullable=False)  # 'user' or 'assistant'
     content = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=get_utc_now, nullable=False)
 
     # Relationships
     chat = relationship("Chat", back_populates="messages")
@@ -175,6 +180,7 @@ def init_db(app=None):
             os.makedirs(db_dir, exist_ok=True)
 
     engine = create_engine(db_url, connect_args={"check_same_thread": False} if "sqlite" in db_url else {})
+    db_session.remove()
     db_session.configure(bind=engine)
     Base.metadata.create_all(bind=engine)
 

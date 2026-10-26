@@ -39,32 +39,34 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Toggle between Login and Registration views
+    function toggleMode(e) {
+        if (e) e.preventDefault();
+        hideStatus();
+        isRegisterMode = !isRegisterMode;
+
+        if (isRegisterMode) {
+            authTitle.textContent = "Create an Account";
+            authSubtitle.textContent = "Join to start indexing and studying your lecture materials";
+            loginForm.classList.add("hidden");
+            registerForm.classList.remove("hidden");
+            toggleAuthText.innerHTML = 'Already have an account? <a href="#" id="toggle-auth-btn">Sign In</a>';
+        } else {
+            authTitle.textContent = "Welcome Back";
+            authSubtitle.textContent = "Sign in to access your study materials";
+            registerForm.classList.add("hidden");
+            loginForm.classList.remove("hidden");
+            toggleAuthText.innerHTML = 'Don\'t have an account? <a href="#" id="toggle-auth-btn">Register</a>';
+        }
+
+        // Rebind listener to newly injected anchor
+        const newToggleBtn = document.getElementById("toggle-auth-btn");
+        if (newToggleBtn) {
+            newToggleBtn.addEventListener("click", toggleMode);
+        }
+    }
+
     if (toggleAuthBtn) {
-        toggleAuthBtn.addEventListener("click", (e) => {
-            e.preventDefault();
-            hideStatus();
-            isRegisterMode = !isRegisterMode;
-
-            if (isRegisterMode) {
-                authTitle.textContent = "Create an Account";
-                authSubtitle.textContent = "Join to start indexing and studying your lecture materials";
-                loginForm.classList.add("hidden");
-                registerForm.classList.remove("hidden");
-                toggleAuthText.innerHTML = 'Already have an account? <a href="#" id="toggle-auth-btn">Sign In</a>';
-            } else {
-                authTitle.textContent = "Welcome Back";
-                authSubtitle.textContent = "Sign in to access your study materials";
-                registerForm.classList.add("hidden");
-                loginForm.classList.remove("hidden");
-                toggleAuthText.innerHTML = 'Don\'t have an account? <a href="#" id="toggle-auth-btn">Register</a>';
-            }
-
-            // Rebind listener
-            const newToggleBtn = document.getElementById("toggle-auth-btn");
-            if (newToggleBtn) {
-                newToggleBtn.addEventListener("click", arguments.callee);
-            }
-        });
+        toggleAuthBtn.addEventListener("click", toggleMode);
     }
 
     // Handle Login Submission

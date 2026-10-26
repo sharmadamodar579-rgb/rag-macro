@@ -1,6 +1,6 @@
 import re
 from flask import Blueprint, request, jsonify, session
-from models.database import db_session, User, get_current_user, login_required
+from models.database import db_session, User, get_current_user, login_required, generate_auth_token
 from utils.rate_limiter import rate_limit
 
 # Create a Blueprint for authentication routes
@@ -93,10 +93,13 @@ def register():
         session["user_id"] = new_user.id
         session.permanent = True
 
+        token = generate_auth_token(new_user.id)
+
         return jsonify({
             "success": True,
             "message": "Registration successful. Welcome to AI College Study Assistant!",
-            "user": new_user.to_dict()
+            "user": new_user.to_dict(),
+            "token": token
         }), 201
 
     except Exception:
@@ -153,10 +156,13 @@ def login():
     session["user_id"] = user.id
     session.permanent = True
 
+    token = generate_auth_token(user.id)
+
     return jsonify({
         "success": True,
         "message": f"Welcome back, {user.username}!",
-        "user": user.to_dict()
+        "user": user.to_dict(),
+        "token": token
     }), 200
 
 

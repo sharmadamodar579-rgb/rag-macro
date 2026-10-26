@@ -61,17 +61,24 @@ def chat(current_user: User):
                 "success": False,
                 "error": "Document not found or access denied."
             }), 404
+
+        if doc_record.chunk_count == 0:
+            return jsonify({
+                "success": False,
+                "error": "This document has 0 indexed text chunks (scanned or image-only PDF). Please upload a text-readable PDF or use OCR to extract text before chatting."
+            }), 400
     else:
         doc_record = (
             db_session.query(Document)
             .filter_by(user_id=current_user.id, processed=True)
+            .filter(Document.chunk_count > 0)
             .order_by(Document.uploaded_at.desc())
             .first()
         )
         if not doc_record:
             return jsonify({
                 "success": False,
-                "error": "No uploaded document found. Please upload a PDF study document first."
+                "error": "No indexed document found. Please upload a PDF study document first."
             }), 404
         document_id = doc_record.id
 
