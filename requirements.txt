@@ -1,0 +1,28 @@
+# Core Web Framework & Security
+Flask>=3.0.0
+Flask-Cors>=4.0.0
+Werkzeug>=3.0.0
+itsdangerous>=2.2.0
+python-dotenv>=1.0.0
+
+# Database & ORM
+SQLAlchemy>=2.0.0
+
+# PDF Parsing & Extraction
+pypdf>=4.0.0
+
+# Text Splitting, Vector Search & Embeddings
+langchain-core>=0.3.0
+langchain-community>=0.3.0
+langchain-text-splitters>=0.3.0
+# AI Provider SDKs
+openai>=1.0.0
+google-genai>=0.1.0
+langchain-google-genai>=2.0.0
+faiss-cpu>=1.8.0
+
+# Production WSGI Server (Windows & Linux)
+waitress>=3.0.0
+
+# Testing & Development
+pytest>=8.0.0

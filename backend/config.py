@@ -86,14 +86,15 @@ class Config:
     # Gemini model for text generation / chat
     GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 
-    # SQLite Database connection URL
-    DATABASE_URL = os.getenv(
-        "DATABASE_URL", f"sqlite:///{BASE_DIR / 'models' / 'app.db'}"
-    )
+    # SQLite Database connection URL (auto-switches to /tmp on serverless like Vercel)
+    _default_db = "sqlite:////tmp/app.db" if os.getenv("VERCEL") else f"sqlite:///{BASE_DIR / 'models' / 'app.db'}"
+    DATABASE_URL = os.getenv("DATABASE_URL", _default_db)
 
-    # Storage paths (strictly contained)
-    UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", str(BASE_DIR / "uploads"))
-    VECTOR_STORE_FOLDER = os.getenv("VECTOR_STORE_FOLDER", str(BASE_DIR / "vector_store"))
+    # Storage paths (strictly contained; points to /tmp on serverless like Vercel)
+    _default_upload = "/tmp/uploads" if os.getenv("VERCEL") else str(BASE_DIR / "uploads")
+    _default_vectors = "/tmp/vector_store" if os.getenv("VERCEL") else str(BASE_DIR / "vector_store")
+    UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", _default_upload)
+    VECTOR_STORE_FOLDER = os.getenv("VECTOR_STORE_FOLDER", _default_vectors)
 
     # Upload validation configuration
     ALLOWED_EXTENSIONS = {"pdf"}
