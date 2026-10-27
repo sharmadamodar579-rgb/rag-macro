@@ -26,3 +26,4 @@ waitress>=3.0.0
 
 # Testing & Development
 pytest>=8.0.0
+gunicorn>=21.0.0

@@ -1,9 +1,6 @@
 """
 Production WSGI Entrypoint for AI College Study Assistant.
-Can be run with:
-    waitress-serve --listen=127.0.0.1:5000 wsgi:app
-or:
-    gunicorn -w 4 -b 127.0.0.1:5000 wsgi:app
+Supports Waitress, Gunicorn, and cloud deployment on Render / Railway.
 """
 
 import os
@@ -20,5 +17,7 @@ app = create_app()
 
 if __name__ == "__main__":
     from waitress import serve
-    print("Serving production application with Waitress on http://127.0.0.1:5000 ...")
-    serve(app, host="127.0.0.1", port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    host = "0.0.0.0"
+    print(f"Serving production application with Waitress on http://{host}:{port} ...")
+    serve(app, host=host, port=port)

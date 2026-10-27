@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: ai-college-study-assistant
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python backend/wsgi.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_DEBUG
+        value: "False"
+      - key: AI_PROVIDER
+        value: openrouter
+      - key: OPENROUTER_MODEL
+        value: openrouter/free
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: "*"
