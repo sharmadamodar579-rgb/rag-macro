@@ -99,6 +99,44 @@ class TestOpenRouterProvider(unittest.TestCase):
         query_vec = emb.embed_query("process scheduling")
         self.assertEqual(len(query_vec), 768)
 
+    @patch("openai.resources.chat.completions.Completions.create")
+    def test_05_reasoning_and_think_tag_cleaning(self, mock_create):
+        """Verify OpenRouterChatModel extracts reasoning and cleans <think> tags from output."""
+        mock_choice = MagicMock()
+        mock_choice.message.content = "<think>The user is asking about paging.</think>Paging is a memory management scheme."
+        mock_choice.message.reasoning = "Internal model reasoning steps."
+        mock_resp = MagicMock()
+        mock_resp.choices = [mock_choice]
+        mock_create.return_value = mock_resp
+
+        model = OpenRouterChatModel(api_key=self.mock_or_key, model_name="openrouter/free")
+        resp = model.invoke("Explain paging")
+
+        # <think>...</think> should be removed from content
+        self.assertEqual(resp.content, "Paging is a memory management scheme.")
+        self.assertEqual(resp.reasoning, "Internal model reasoning steps.")
+
+    @patch("openai.resources.chat.completions.Completions.create")
+    def test_06_streaming_token_generation(self, mock_create):
+        """Verify OpenRouterChatModel.stream yields content tokens from stream chunks."""
+        def make_chunk(text):
+            chunk = MagicMock()
+            chunk.choices = [MagicMock()]
+            chunk.choices[0].delta.content = text
+            return chunk
+
+        mock_create.return_value = iter([
+            make_chunk("CPU "),
+            make_chunk("scheduling "),
+            make_chunk("algorithm")
+        ])
+
+        model = OpenRouterChatModel(api_key=self.mock_or_key, model_name="openrouter/free")
+        tokens = list(model.stream("Hello"))
+
+        self.assertEqual(tokens, ["CPU ", "scheduling ", "algorithm"])
+        self.assertEqual("".join(tokens), "CPU scheduling algorithm")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -6,9 +6,10 @@ from config import Config
 
 
 class OpenRouterResponse:
-    """Wrapper matching LangChain message output structure."""
-    def __init__(self, content: str):
+    """Wrapper matching LangChain message output structure with reasoning tokens support."""
+    def __init__(self, content: str, reasoning: Optional[str] = None):
         self.content = content
+        self.reasoning = reasoning
 
     def __str__(self):
         return self.content
@@ -42,8 +43,7 @@ class OpenRouterChatModel:
             api_key=self.api_key
         )
 
-    def invoke(self, messages: Any) -> OpenRouterResponse:
-        """Execute chat completion call against OpenRouter with strict free model routing."""
+    def _format_messages(self, messages: Any) -> List[Dict[str, str]]:
         api_messages = []
         if isinstance(messages, str):
             api_messages = [{"role": "user", "content": messages}]
@@ -64,7 +64,11 @@ class OpenRouterChatModel:
                     api_messages.append({"role": "user", "content": str(msg)})
         else:
             api_messages = [{"role": "user", "content": str(messages)}]
+        return api_messages
 
+    def invoke(self, messages: Any) -> OpenRouterResponse:
+        """Execute chat completion call against OpenRouter with strict free model routing and reasoning extraction."""
+        api_messages = self._format_messages(messages)
         resp = self.client.chat.completions.create(
             model=self.model,
             messages=api_messages,
@@ -74,8 +78,41 @@ class OpenRouterChatModel:
                 "X-Title": "AI College Study Assistant"
             }
         )
-        content = resp.choices[0].message.content or ""
-        return OpenRouterResponse(content=content)
+        choice = resp.choices[0]
+        content = choice.message.content or ""
+        reasoning = getattr(choice.message, "reasoning", None) or getattr(choice.message, "reasoning_details", None)
+
+        # Clean <think>...</think> tags if emitted directly in content by reasoning models
+        if "<think>" in content and "</think>" in content:
+            think_match = re.search(r"<think>(.*?)</think>", content, re.DOTALL)
+            if think_match:
+                if not reasoning:
+                    reasoning = think_match.group(1).strip()
+                content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
+
+        return OpenRouterResponse(content=content, reasoning=reasoning)
+
+    def stream(self, messages: Any):
+        """
+        Stream chat completion tokens from OpenRouter using openrouter/free.
+        Yields chunk content strings as they arrive.
+        """
+        api_messages = self._format_messages(messages)
+        stream_resp = self.client.chat.completions.create(
+            model=self.model,
+            messages=api_messages,
+            temperature=self.temperature,
+            stream=True,
+            extra_headers={
+                "HTTP-Referer": "http://localhost:5000",
+                "X-Title": "AI College Study Assistant"
+            }
+        )
+        for chunk in stream_resp:
+            delta = chunk.choices[0].delta if chunk.choices else None
+            content_chunk = getattr(delta, "content", None)
+            if content_chunk:
+                yield content_chunk
 
 
 def get_chat_model(
@@ -281,6 +318,29 @@ def generate_rag_answer(
         api_key=api_key
     )
 
+
+def stream_rag_answer(
+    question: str,
+    context_chunks: List[Dict[str, Any]],
+    model_name: Optional[str] = None,
+    api_key: Optional[str] = None
+):
+    """
+    Stream grounded RAG answer tokens chunk-by-chunk using openrouter/free streaming.
+    """
+    if not context_chunks:
+        yield "The uploaded material does not provide enough information to answer this question."
+        return
+
+    prompt = build_rag_prompt(question=question, context_chunks=context_chunks)
+    chat_model = get_chat_model(model_name=model_name, api_key=api_key)
+
+    if hasattr(chat_model, "stream"):
+        for chunk in chat_model.stream([HumanMessage(content=prompt)]):
+            yield chunk
+    else:
+        full_ans = generate_answer_with_context(prompt=prompt, model_name=model_name, api_key=api_key)
+        yield full_ans
 
 MAX_DIRECT_SUMMARY_CHARS = 25000  # Character limit for single-pass summarization
 

@@ -1,8 +1,9 @@
 import re
-from flask import Blueprint, request, jsonify, current_app
+import json
+from flask import Blueprint, request, jsonify, current_app, Response, stream_with_context
 from models.database import db_session, Document, Chat, Message, User, login_required
 from services.rag_service import search_similar_chunks
-from services.ai_service import generate_rag_answer
+from services.ai_service import generate_rag_answer, stream_rag_answer
 from utils.rate_limiter import rate_limit
 
 # Create a Blueprint for chat-related routes
@@ -41,6 +42,9 @@ def chat(current_user: User):
         }), 400
 
     question = question.strip()
+
+    if data.get("stream") is True:
+        return chat_stream(current_user=current_user)
 
     document_id = data.get("document_id")
     if document_id is not None:
@@ -231,3 +235,155 @@ def get_chat_history(current_user: User):
         "chats": chat_list,
         "history": chat_list
     }), 200
+
+
+
+@chat_bp.route("/stream", methods=["POST"], strict_slashes=False)
+@login_required
+@rate_limit(max_requests=20, window_seconds=60, key_type="user")
+def chat_stream(current_user: User):
+    """
+    Handle student questions via the RAG pipeline with Server-Sent Events (SSE) streaming.
+    Streams tokens chunk-by-chunk using openrouter/free.
+    """
+    data = request.get_json(silent=True)
+    if not data or not isinstance(data, dict):
+        return jsonify({
+            "success": False,
+            "error": "Invalid request. Expected JSON object with 'question' field."
+        }), 400
+
+    question = data.get("question") or data.get("query") or data.get("message")
+    if not question or not isinstance(question, str) or not question.strip():
+        return jsonify({
+            "success": False,
+            "error": "Question is required and cannot be empty."
+        }), 400
+
+    question = question.strip()
+
+    document_id = data.get("document_id")
+    if document_id is not None:
+        if not isinstance(document_id, str) or not document_id.strip() or not re.match(r"^[a-zA-Z0-9_\-]+$", document_id):
+            return jsonify({
+                "success": False,
+                "error": "Invalid document ID format. Only alphanumeric characters, hyphens, and underscores are allowed."
+            }), 400
+        document_id = document_id.strip()
+
+        doc_record = (
+            db_session.query(Document)
+            .filter_by(id=document_id, user_id=current_user.id)
+            .first()
+        )
+        if not doc_record:
+            return jsonify({
+                "success": False,
+                "error": "Document not found or access denied."
+            }), 404
+
+        if doc_record.chunk_count == 0:
+            return jsonify({
+                "success": False,
+                "error": "This document has 0 indexed text chunks (scanned or image-only PDF). Please upload a text-readable PDF or use OCR to extract text before chatting."
+            }), 400
+    else:
+        doc_record = (
+            db_session.query(Document)
+            .filter_by(user_id=current_user.id, processed=True)
+            .filter(Document.chunk_count > 0)
+            .order_by(Document.uploaded_at.desc())
+            .first()
+        )
+        if not doc_record:
+            return jsonify({
+                "success": False,
+                "error": "No indexed document found. Please upload a PDF study document first."
+            }), 404
+        document_id = doc_record.id
+
+    gemini_api_key = current_app.config.get("GEMINI_API_KEY", "")
+    if not gemini_api_key:
+        return jsonify({
+            "success": False,
+            "error": "AI API key is not configured on the server."
+        }), 500
+
+    k = data.get("k", 4)
+    try:
+        k = int(k)
+        if k <= 0:
+            k = 4
+        elif k > 20:
+            k = 20
+    except (ValueError, TypeError):
+        k = 4
+
+    embedding_model_name = current_app.config.get("EMBEDDING_MODEL", "models/text-embedding-004")
+    model_name = current_app.config.get("OPENROUTER_MODEL") or current_app.config.get("GEMINI_MODEL", "openrouter/free")
+
+    try:
+        retrieved_chunks = search_similar_chunks(
+            document_id=document_id,
+            query=question,
+            k=k,
+            model_name=embedding_model_name,
+            api_key=gemini_api_key
+        )
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"Failed to search vector store for relevant context: {str(e)}"
+        }), 500
+
+    sources = []
+    seen_sources = set()
+    for chunk in retrieved_chunks:
+        doc_name = chunk.get("filename") or doc_record.filename
+        page_num = chunk.get("page", 1)
+        source_key = (doc_name, page_num)
+        if source_key not in seen_sources:
+            seen_sources.add(source_key)
+            sources.append({"document": doc_name, "page": page_num})
+
+    user_id = current_user.id
+
+    def generate_sse():
+        collected_tokens = []
+        try:
+            for token in stream_rag_answer(
+                question=question,
+                context_chunks=retrieved_chunks,
+                model_name=model_name,
+                api_key=gemini_api_key
+            ):
+                collected_tokens.append(token)
+                yield f"data: {json.dumps({'chunk': token})}\n\n"
+
+            full_answer = "".join(collected_tokens).strip()
+
+            chat_id = None
+            try:
+                chat_session = (
+                    db_session.query(Chat)
+                    .filter_by(user_id=user_id, document_id=document_id)
+                    .order_by(Chat.created_at.desc())
+                    .first()
+                )
+                if not chat_session:
+                    chat_session = Chat(user_id=user_id, document_id=document_id)
+                    db_session.add(chat_session)
+                    db_session.commit()
+
+                db_session.add(Message(chat_id=chat_session.id, role="user", content=question))
+                db_session.add(Message(chat_id=chat_session.id, role="assistant", content=full_answer))
+                db_session.commit()
+                chat_id = chat_session.id
+            except Exception:
+                db_session.rollback()
+
+            yield f"data: {json.dumps({'done': True, 'sources': sources, 'chat_id': chat_id})}\n\n"
+        except Exception as err:
+            yield f"data: {json.dumps({'error': str(err)})}\n\n"
+
+    return Response(stream_with_context(generate_sse()), mimetype="text/event-stream")
