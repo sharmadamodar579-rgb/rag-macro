@@ -3,67 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - AI College Study Assistant</title>
+    <title>Sign In - AI College Study Assistant</title>
     <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body class="auth-body">
-    <div class="auth-card">
-        <div class="auth-header">
-            <span class="logo-icon">🎓</span>
-            <h2 id="auth-title">Welcome Back</h2>
-            <p id="auth-subtitle">Sign in to access your study materials</p>
-        </div>
+    <!-- Live Wallpaper Ambient Canvas -->
+    <canvas id="bg-canvas" class="live-wallpaper-canvas" aria-hidden="true"></canvas>
 
-        <!-- Status Message -->
-        <div id="auth-status" class="status-box hidden" style="margin-bottom: 1.25rem;">
-            <div class="status-icon" id="auth-status-icon">⚠️</div>
-            <div class="status-content">
-                <p id="auth-status-text" class="status-title"></p>
-            </div>
-        </div>
+    <!-- Ambient Volumetric Lighting Glows -->
+    <div class="ambient-glow ambient-glow-1" aria-hidden="true"></div>
+    <div class="ambient-glow ambient-glow-2" aria-hidden="true"></div>
 
-        <!-- Login Form -->
-        <form id="login-form" class="auth-form">
-            <div class="form-group">
-                <label for="login-email">Email or Username</label>
-                <input type="text" id="login-email" placeholder="student@college.edu" required autocomplete="username">
+    <div class="auth-wrapper">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="logo-icon-wrapper" style="margin: 0 auto 1rem auto; width: 56px; height: 56px;">
+                    <span class="logo-icon" style="font-size: 1.75rem;">🎓</span>
+                </div>
+                <h2 id="auth-title">Welcome to Studio</h2>
+                <p id="auth-subtitle">Sign in to access your documents and study history</p>
             </div>
 
-            <div class="form-group">
-                <label for="login-password">Password</label>
-                <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+            <!-- Status Message -->
+            <div id="auth-status" class="status-box hidden" style="margin-bottom: 1.25rem;">
+                <div class="status-icon" id="auth-status-icon">⚠️</div>
+                <div class="status-content">
+                    <p id="auth-status-text" class="status-title"></p>
+                </div>
             </div>
 
-            <button type="submit" id="login-btn" class="btn btn-primary btn-block">Sign In</button>
-        </form>
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form">
+                <div class="form-group">
+                    <label for="login-email">Email or Username</label>
+                    <input type="text" id="login-email" placeholder="student@college.edu" required autocomplete="username">
+                </div>
 
-        <!-- Register Form (Initially Hidden) -->
-        <form id="register-form" class="auth-form hidden">
-            <div class="form-group">
-                <label for="reg-username">Username</label>
-                <input type="text" id="reg-username" placeholder="johndoe" required autocomplete="username">
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+
+                <button type="submit" id="login-btn" class="btn btn-primary btn-block btn-glow">
+                    <span>Sign In</span>
+                    <span class="btn-arrow">→</span>
+                </button>
+            </form>
+
+            <!-- Register Form (Initially Hidden) -->
+            <form id="register-form" class="auth-form hidden">
+                <div class="form-group">
+                    <label for="reg-username">Username</label>
+                    <input type="text" id="reg-username" placeholder="johndoe" required autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label for="reg-email">Email Address</label>
+                    <input type="email" id="reg-email" placeholder="student@college.edu" required autocomplete="email">
+                </div>
+
+                <div class="form-group">
+                    <label for="reg-password">Password (min 6 chars)</label>
+                    <input type="password" id="reg-password" placeholder="••••••••" required autocomplete="new-password">
+                </div>
+
+                <button type="submit" id="register-btn" class="btn btn-primary btn-block btn-glow">
+                    <span>Create Account</span>
+                    <span class="btn-arrow">→</span>
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <p id="toggle-auth-text">Don't have an account? <a href="#" id="toggle-auth-btn">Register</a></p>
+                <p><a href="index.html">← Back to Overview</a></p>
             </div>
-
-            <div class="form-group">
-                <label for="reg-email">Email Address</label>
-                <input type="email" id="reg-email" placeholder="student@college.edu" required autocomplete="email">
-            </div>
-
-            <div class="form-group">
-                <label for="reg-password">Password (min 6 chars)</label>
-                <input type="password" id="reg-password" placeholder="••••••••" required autocomplete="new-password">
-            </div>
-
-            <button type="submit" id="register-btn" class="btn btn-primary btn-block">Create Account</button>
-        </form>
-
-        <div class="auth-footer">
-            <p id="toggle-auth-text">Don't have an account? <a href="#" id="toggle-auth-btn">Register</a></p>
-            <p><a href="index.html">← Back to Home</a></p>
         </div>
     </div>
 
+    <!-- Scripts -->
+    <script src="js/wallpaper.js"></script>
     <script src="js/auth.js"></script>
 </body>
 </html>

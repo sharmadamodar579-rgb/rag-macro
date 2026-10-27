@@ -3,16 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FAISS Semantic Retrieval - AI College Study Assistant</title>
+    <title>Study Studio - AI College Study Assistant</title>
     <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-body">
+    <!-- Live Wallpaper Ambient Canvas -->
+    <canvas id="bg-canvas" class="live-wallpaper-canvas" aria-hidden="true"></canvas>
+
+    <!-- Ambient Volumetric Lighting Glows -->
+    <div class="ambient-glow ambient-glow-1" aria-hidden="true"></div>
+    <div class="ambient-glow ambient-glow-2" aria-hidden="true"></div>
+
     <!-- Top Navigation -->
     <header class="navbar">
         <div class="logo">
-            <span class="logo-icon">📚</span>
-            <h1>AI Study Assistant</h1>
+            <div class="logo-icon-wrapper">
+                <span class="logo-icon">🎓</span>
+            </div>
+            <div class="logo-text-group">
+                <span class="brand-title">Aethelgard AI</span>
+                <span class="brand-subtitle">Study Assistant</span>
+            </div>
         </div>
         <nav>
             <a href="index.html" class="nav-link">Home</a>
@@ -391,6 +405,7 @@
         </section>
     </main>
 
+    <script src="js/wallpaper.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>

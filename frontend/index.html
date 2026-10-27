@@ -3,42 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI College Study Assistant</title>
+    <title>AI College Study Assistant — Next-Gen Academic RAG</title>
     <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="landing-body">
+    <!-- Live Wallpaper Ambient Canvas -->
+    <canvas id="bg-canvas" class="live-wallpaper-canvas" aria-hidden="true"></canvas>
+
+    <!-- Ambient Volumetric Lighting Glows -->
+    <div class="ambient-glow ambient-glow-1" aria-hidden="true"></div>
+    <div class="ambient-glow ambient-glow-2" aria-hidden="true"></div>
+
+    <!-- Navigation Header -->
     <header class="navbar">
         <div class="logo">
-            <span class="logo-icon">📚</span>
-            <h1>AI Study Assistant</h1>
+            <div class="logo-icon-wrapper">
+                <span class="logo-icon">🎓</span>
+            </div>
+            <div class="logo-text-group">
+                <span class="brand-title">Aethelgard AI</span>
+                <span class="brand-subtitle">Study Assistant</span>
+            </div>
         </div>
         <nav>
-            <a href="index.html" class="nav-link active">Home</a>
-            <a href="login.html" class="nav-link">Login</a>
-            <a href="dashboard.html" class="btn btn-primary">Dashboard</a>
+            <a href="index.html" class="nav-link active">Overview</a>
+            <a href="login.html" class="nav-link">Account</a>
+            <a href="dashboard.html" class="btn btn-primary btn-sm">Launch Studio →</a>
         </nav>
     </header>
 
-    <main class="hero-section">
-        <div class="hero-content">
-            <span class="badge">AI-Powered RAG Learning</span>
-            <h2>Master Your College Notes with Intelligent AI</h2>
-            <p>Upload your lecture notes, textbooks, and PDFs. Ask questions, generate summaries, and test your knowledge with MCQs powered by Retrieval-Augmented Generation.</p>
-            
-            <div class="hero-actions">
-                <a href="dashboard.html" class="btn btn-primary">Get Started</a>
-                <button id="check-api-btn" class="btn btn-secondary">Check Backend Status</button>
+    <!-- Main Hero Experience -->
+    <main class="hero-container">
+        <section class="hero-section">
+            <div class="hero-badge-wrapper">
+                <span class="hero-badge">
+                    <span class="badge-dot"></span>
+                    <span class="badge-text">RAG-POWERED ACADEMIC RETRIEVAL ENGINE</span>
+                </span>
             </div>
 
-            <!-- API Status Indicator -->
+            <h1 class="hero-title">
+                Master Your College Notes with
+                <span class="gradient-text">Neural Intelligence</span>
+            </h1>
+
+            <p class="hero-description">
+                Transform dense lecture notes, textbooks, and syllabus PDFs into an interactive study workspace.
+                Ask complex questions, synthesize study summaries, and master practice quizzes with zero hallucination and verified page citations.
+            </p>
+
+            <div class="hero-actions">
+                <a href="dashboard.html" class="btn btn-primary btn-lg btn-glow">
+                    <span>Enter Study Studio</span>
+                    <span class="btn-arrow">→</span>
+                </a>
+                <a href="login.html" class="btn btn-secondary btn-lg">
+                    <span>Sign In / Register</span>
+                </a>
+                <button id="check-api-btn" class="btn btn-ghost btn-lg">
+                    <span class="pulse-icon">⚡</span>
+                    <span>System Status</span>
+                </button>
+            </div>
+
+            <!-- API Status Card -->
             <div id="api-status-card" class="status-card">
                 <span class="status-dot"></span>
-                <span id="api-status-text">Checking backend connection...</span>
+                <span id="api-status-text">Checking backend neural services...</span>
             </div>
-        </div>
+        </section>
+
+        <!-- Feature Pillars Grid -->
+        <section class="features-section">
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon-box cyan-glow">
+                        <span>🔍</span>
+                    </div>
+                    <h3>Grounded Semantic Retrieval</h3>
+                    <p>Vectorized with local 768-dimensional FAISS indexing. Answers are strictly grounded in your documents with exact page numbers.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon-box indigo-glow">
+                        <span>📝</span>
+                    </div>
+                    <h3>Hierarchical Study Summaries</h3>
+                    <p>Condenses 50+ page chapters into high-yield exam takeaways, core concept cheat-sheets, and concise revision bullet points.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon-box amber-glow">
+                        <span>🎯</span>
+                    </div>
+                    <h3>Interactive Practice Quizzes</h3>
+                    <p>Dynamic MCQ generation with plausible distractors, immediate scoring, correct answer explanations, and source page citations.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon-box emerald-glow">
+                        <span>⭐</span>
+                    </div>
+                    <h3>Exam Question Prioritization</h3>
+                    <p>AI identifies and ranks exam questions by high, medium, and low priority, complete with conceptual answer guides.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="landing-footer">
+            <p>Designed for college students. 100% Free, Private, and Secure.</p>
+        </footer>
     </main>
 
+    <!-- Scripts -->
+    <script src="js/wallpaper.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>
