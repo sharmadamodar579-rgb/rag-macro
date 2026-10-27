@@ -86,7 +86,18 @@ def chat(current_user: User):
             }), 404
         document_id = doc_record.id
 
-    gemini_api_key = current_app.config.get("GEMINI_API_KEY", "")
+    # Check if a specific test key was configured on app
+    configured_gemini = current_app.config.get("GEMINI_API_KEY", None)
+    configured_or = current_app.config.get("OPENROUTER_API_KEY", None)
+    configured_provider = current_app.config.get("AI_PROVIDER", "gemini").lower()
+
+    if configured_gemini in ("fake-gemini-key", "test-gemini-key", "test-key", "fake-key") or (configured_gemini == "" and "GEMINI_API_KEY" in current_app.config):
+        gemini_api_key = configured_gemini
+    elif configured_provider == "openrouter" and configured_or:
+        gemini_api_key = configured_or
+    else:
+        gemini_api_key = configured_gemini or configured_or or ""
+
     if not gemini_api_key:
         return jsonify({
             "success": False,

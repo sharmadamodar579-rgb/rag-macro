@@ -77,6 +77,7 @@ class Document(Base):
     """
     Document model representing an uploaded PDF study material.
     Linked to the user who uploaded it.
+    Includes lifecycle tracking (uploaded -> processing -> indexed / failed / ocr_required).
     """
     __tablename__ = "documents"
 
@@ -86,15 +87,17 @@ class Document(Base):
     filepath = Column(String(512), nullable=False)
     file_hash = Column(String(64), nullable=True, index=True)
     uploaded_at = Column(DateTime, default=get_utc_now, nullable=False)
+    status = Column(String(32), default="uploaded", nullable=False)  # uploaded, processing, indexed, failed, ocr_required
     processed = Column(Boolean, default=False, nullable=False)
     chunk_count = Column(Integer, default=0, nullable=False)
+    error_message = Column(Text, nullable=True)
 
     # Relationships
     user = relationship("User", back_populates="documents")
     chats = relationship("Chat", back_populates="document", cascade="all, delete-orphan")
 
     def to_dict(self) -> dict:
-        """Return document metadata dictionary."""
+        """Return document metadata dictionary with full lifecycle status."""
         return {
             "id": self.id,
             "document_id": self.id,
@@ -102,8 +105,10 @@ class Document(Base):
             "filename": self.filename,
             "file_hash": self.file_hash,
             "uploaded_at": self.uploaded_at.isoformat() if self.uploaded_at else None,
+            "status": self.status or ("indexed" if self.processed else "uploaded"),
             "processed": self.processed,
-            "chunk_count": self.chunk_count
+            "chunk_count": self.chunk_count,
+            "error_message": self.error_message
         }
 
 
@@ -190,9 +195,14 @@ def init_db(app=None):
             try:
                 res = conn.exec_driver_sql("PRAGMA table_info(documents);")
                 columns = [row[1] for row in res.fetchall()]
-                if columns and "file_hash" not in columns:
-                    conn.exec_driver_sql("ALTER TABLE documents ADD COLUMN file_hash VARCHAR(64);")
-                    conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_documents_file_hash ON documents (file_hash);")
+                if columns:
+                    if "file_hash" not in columns:
+                        conn.exec_driver_sql("ALTER TABLE documents ADD COLUMN file_hash VARCHAR(64);")
+                        conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_documents_file_hash ON documents (file_hash);")
+                    if "status" not in columns:
+                        conn.exec_driver_sql("ALTER TABLE documents ADD COLUMN status VARCHAR(32) DEFAULT 'uploaded';")
+                    if "error_message" not in columns:
+                        conn.exec_driver_sql("ALTER TABLE documents ADD COLUMN error_message TEXT;")
                     conn.commit()
             except Exception:
                 pass

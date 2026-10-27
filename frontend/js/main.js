@@ -107,7 +107,13 @@ document.addEventListener("DOMContentLoaded", () => {
                             </div>
                             <div class="doc-item-meta">
                                 <span>${doc.chunk_count || 0} chunks</span> •
-                                <span>${doc.processed ? "Indexed" : "Pending"}</span>
+                                <span>${
+                                    doc.status === "indexed" ? '<span style="color: #10b981; font-weight: 500;">Indexed</span>' :
+                                    doc.status === "ocr_required" ? '<span style="color: #f59e0b; font-weight: 500;" title="Scanned or image-only PDF. OCR required to extract text.">OCR Required</span>' :
+                                    doc.status === "failed" ? `<span style="color: #ef4444; font-weight: 500;" title="${escapeHtml(doc.error_message || 'Processing failed')}">Failed</span>` :
+                                    doc.status === "processing" ? '<span style="color: #3b82f6; font-weight: 500;">Processing</span>' :
+                                    '<span style="color: #8b5cf6; font-weight: 500;">Uploaded</span>'
+                                }</span>
                             </div>
                         </div>
                         <div class="doc-item-actions">

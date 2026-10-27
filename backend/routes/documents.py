@@ -188,15 +188,44 @@ def upload_document(current_user: User):
             .first()
         )
 
+        ai_api_key = current_app.config.get("OPENROUTER_API_KEY") or current_app.config.get("GEMINI_API_KEY", "")
         reused_cache = False
         if existing_doc and chunks:
             try:
                 existing_store = get_document_vector_store_path(existing_doc.id)
                 new_store = get_document_vector_store_path(document_id)
-                if os.path.exists(os.path.join(existing_store, "index.faiss")):
+                if os.path.exists(os.path.join(existing_store, "index.faiss")) and os.path.exists(os.path.join(existing_store, "index.pkl")):
+                    from services.rag_service import load_vector_store, get_embedding_model
+                    from datetime import datetime, timezone
+                    import json
+
+                    # Load existing vector store without repeating embedding calculation
+                    existing_vs = load_vector_store(
+                        document_id=existing_doc.id,
+                        model_name=embedding_model_name,
+                        api_key=ai_api_key
+                    )
+                    # Refresh all chunk metadata to point to current document ID and current filename
+                    for chunk_doc in existing_vs.docstore._dict.values():
+                        chunk_doc.metadata["document_id"] = document_id
+                        chunk_doc.metadata["filename"] = filename
+
+                    # Save updated vector store to current document's path with metadata
                     os.makedirs(new_store, exist_ok=True)
-                    shutil.copy(os.path.join(existing_store, "index.faiss"), os.path.join(new_store, "index.faiss"))
-                    shutil.copy(os.path.join(existing_store, "index.pkl"), os.path.join(new_store, "index.pkl"))
+                    existing_vs.save_local(new_store)
+
+                    meta_info = {
+                        "version": "2.0.0",
+                        "document_id": document_id,
+                        "dimension": getattr(get_embedding_model(model_name=embedding_model_name, api_key=ai_api_key), "dim", 768),
+                        "model_name": embedding_model_name,
+                        "chunk_count": total_chunks,
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                        "reused_cache": True
+                    }
+                    with open(os.path.join(new_store, "index_meta.json"), "w", encoding="utf-8") as f:
+                        json.dump(meta_info, f, indent=2)
+
                     reused_cache = True
                     vector_store_info = {
                         "created": True,
@@ -259,26 +288,35 @@ def upload_document(current_user: User):
                     "message": "GEMINI_API_KEY not set in .env. Embeddings skipped."
                 }
 
-        # Update record
-        doc_record.processed = True
-        doc_record.chunk_count = total_chunks
-        db_session.commit()
-
+        # Update record lifecycle status
         if not extraction_result["has_extractable_text"]:
+            doc_record.status = "ocr_required"
+            doc_record.processed = False
+            doc_record.chunk_count = 0
+            doc_record.error_message = extraction_result.get("message", "Scanned or image-only PDF requires OCR.")
             status_message = (
                 "No extractable text was found in this PDF. It appears to be a scanned document or "
                 "image-only PDF. OCR is required to process images."
             )
         elif vector_store_info.get("created"):
+            doc_record.status = "indexed"
+            doc_record.processed = True
+            doc_record.chunk_count = total_chunks
+            doc_record.error_message = None
             status_message = (
                 f"Successfully extracted {extraction_result['total_pages']} page(s), "
                 f"generated {total_chunks} chunk(s), and indexed in FAISS."
             )
         else:
+            doc_record.status = "failed" if vector_store_info.get("error") else "processing"
+            doc_record.processed = False
+            doc_record.chunk_count = total_chunks
+            doc_record.error_message = vector_store_info.get("error") or vector_store_info.get("message")
             status_message = (
                 f"Successfully extracted {extraction_result['total_pages']} page(s) "
                 f"and generated {total_chunks} text chunk(s)."
             )
+        db_session.commit()
 
         return jsonify({
             "success": True,
@@ -448,7 +486,7 @@ def search_document(current_user: User, document_id: str):
     if not gemini_api_key:
         return jsonify({
             "success": False,
-            "error": "GEMINI_API_KEY is not configured on the server. Please set it in your .env file."
+            "error": "GEMINI_API_KEY is not configured on the server (set OPENROUTER_API_KEY or GEMINI_API_KEY in .env)."
         }), 400
 
     try:
@@ -521,7 +559,7 @@ def summarize_document(current_user: User, document_id: str):
     if not gemini_api_key:
         return jsonify({
             "success": False,
-            "error": "GEMINI_API_KEY is not configured on the server. Please set it in your .env file."
+            "error": "GEMINI_API_KEY is not configured on the server (set OPENROUTER_API_KEY or GEMINI_API_KEY in .env)."
         }), 500
 
     gemini_model_name = current_app.config.get("GEMINI_MODEL", "gemini-1.5-flash")
@@ -634,7 +672,7 @@ def generate_mcqs_for_document(current_user: User, document_id: str):
     if not gemini_api_key:
         return jsonify({
             "success": False,
-            "error": "GEMINI_API_KEY is not configured on the server. Please set it in your .env file."
+            "error": "GEMINI_API_KEY is not configured on the server (set OPENROUTER_API_KEY or GEMINI_API_KEY in .env)."
         }), 500
 
     gemini_model_name = current_app.config.get("GEMINI_MODEL", "gemini-1.5-flash")
@@ -747,7 +785,7 @@ def generate_questions_for_document(current_user: User, document_id: str):
     if not gemini_api_key:
         return jsonify({
             "success": False,
-            "error": "GEMINI_API_KEY is not configured on the server. Please set it in your .env file."
+            "error": "GEMINI_API_KEY is not configured on the server (set OPENROUTER_API_KEY or GEMINI_API_KEY in .env)."
         }), 500
 
     gemini_model_name = current_app.config.get("GEMINI_MODEL", "gemini-1.5-flash")

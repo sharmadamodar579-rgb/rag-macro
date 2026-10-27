@@ -1,14 +1,41 @@
-import re
-import numpy as np
-from langchain_core.embeddings import Embeddings
+"""
+RAG Service: Document Chunking, Deterministic Offline Embeddings, FAISS Vector Store,
+and Semantic Retrieval Utilities.
+"""
+
 import os
 import re
+import json
+import shutil
+import hashlib
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
+
+import numpy as np
+from langchain_core.embeddings import Embeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_core.documents import Document
 from langchain_community.vectorstores import FAISS
 from config import Config
+
+# Version identifier for persisted vector indexes
+INDEX_VERSION = "2.0.0"
+
+
+class IncompatibleIndexError(Exception):
+    """Raised when an on-disk FAISS index was built with an incompatible model, version, or dimension."""
+    pass
+
+
+def _deterministic_hash(s: str) -> int:
+    """
+    Compute a stable, deterministic 64-bit integer hash from a text string.
+    Unlike Python's built-in hash(), this uses SHA-256 and is completely invariant
+    across Python process restarts, PYTHONHASHSEED randomization, and OS platforms.
+    """
+    digest = hashlib.sha256(s.encode("utf-8")).digest()
+    return int.from_bytes(digest[:8], byteorder="big", signed=False)
 
 
 # ----------------------------------------------------------------------
@@ -106,8 +133,9 @@ def chunk_document_pages(
 
 class LocalOfflineEmbeddings(Embeddings):
     """
-    Offline local term-frequency / n-gram hash embeddings.
-    Zero external API calls, 100% free, deterministic, works natively with FAISS.
+    Deterministic offline term-frequency and character/word n-gram hash embeddings.
+    Zero external API calls, 100% free, deterministic across process restarts,
+    compatible with FAISS vector indexing.
     """
     def __init__(self, dim: int = 768):
         self.dim = dim
@@ -119,10 +147,10 @@ class LocalOfflineEmbeddings(Embeddings):
             vec[0] = 1.0
             return vec.tolist()
         for w in words:
-            h = abs(hash(w)) % self.dim
+            h = _deterministic_hash(w) % self.dim
             vec[h] += 1.0
         for i in range(len(words) - 1):
-            h2 = abs(hash(words[i] + "_" + words[i + 1])) % self.dim
+            h2 = _deterministic_hash(f"{words[i]}_{words[i + 1]}") % self.dim
             vec[h2] += 0.5
         norm = float(np.linalg.norm(vec))
         if norm > 0:
@@ -143,20 +171,17 @@ class DeterministicTestEmbeddings:
     def __init__(self, dim: int = 768):
         self.dim = dim
 
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        results = []
-        for text in texts:
-            val = float((sum(ord(c) for c in text[:20]) % 100) + 1) / 100.0
-            vec = [val] * self.dim
-            norm = (len(vec) * (val ** 2)) ** 0.5 or 1.0
-            results.append([v / norm for v in vec])
-        return results
-
-    def embed_query(self, text: str) -> List[float]:
+    def _embed(self, text: str) -> List[float]:
         val = float((sum(ord(c) for c in text[:20]) % 100) + 1) / 100.0
         vec = [val] * self.dim
         norm = (len(vec) * (val ** 2)) ** 0.5 or 1.0
         return [v / norm for v in vec]
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        return [self._embed(t) for t in texts]
+
+    def embed_query(self, text: str) -> List[float]:
+        return self._embed(text)
 
 
 def get_embedding_model(
@@ -172,7 +197,7 @@ def get_embedding_model(
     if api_key is not None:
         key = api_key
     else:
-        key = getattr(Config, "GEMINI_API_KEY", "") or getattr(Config, "OPENROUTER_API_KEY", "")
+        key = getattr(Config, "OPENROUTER_API_KEY", "") or getattr(Config, "GEMINI_API_KEY", "")
 
     if not key or not key.strip():
         raise ValueError(
@@ -269,11 +294,13 @@ def create_vector_store(
 ) -> Dict[str, Any]:
     """
     Build a persistent FAISS vector store for a document from its text chunks and save it to disk.
+    Applies atomic file writes and persists index configuration metadata (index_meta.json).
     """
     if not chunks:
         raise ValueError("Cannot create a vector store from an empty list of chunks.")
 
     store_path = get_document_vector_store_path(document_id)
+    temp_store_path = store_path + "_tmp"
 
     # 1. Convert chunks into LangChain Document instances with full metadata
     langchain_docs: List[Document] = []
@@ -303,18 +330,46 @@ def create_vector_store(
     except Exception as e:
         raise RuntimeError(f"FAISS index creation failed: {str(e)}")
 
-    # 4. Save index to local disk for persistence across server restarts
+    # 4. Save index with atomic persistence and index_meta.json
     try:
-        os.makedirs(store_path, exist_ok=True)
-        vector_store.save_local(store_path)
+        if os.path.exists(temp_store_path):
+            shutil.rmtree(temp_store_path, ignore_errors=True)
+        os.makedirs(temp_store_path, exist_ok=True)
+        vector_store.save_local(temp_store_path)
+
+        meta_info = {
+            "version": INDEX_VERSION,
+            "document_id": document_id,
+            "dimension": getattr(embedding_model, "dim", 768),
+            "model_name": model_name or getattr(Config, "EMBEDDING_MODEL", "local-offline-768"),
+            "chunk_count": len(langchain_docs),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        with open(os.path.join(temp_store_path, "index_meta.json"), "w", encoding="utf-8") as f:
+            json.dump(meta_info, f, indent=2)
+
+        # Atomic replacement: rename existing store to backup, rename temp to target, then purge backup
+        if os.path.exists(store_path):
+            backup_path = store_path + "_old"
+            if os.path.exists(backup_path):
+                shutil.rmtree(backup_path, ignore_errors=True)
+            os.rename(store_path, backup_path)
+            os.rename(temp_store_path, store_path)
+            shutil.rmtree(backup_path, ignore_errors=True)
+        else:
+            os.rename(temp_store_path, store_path)
+
     except Exception as e:
+        if os.path.exists(temp_store_path):
+            shutil.rmtree(temp_store_path, ignore_errors=True)
         raise RuntimeError(f"Failed to save FAISS index to disk at '{store_path}': {str(e)}")
 
     return {
         "created": True,
         "document_id": document_id,
         "vectors": len(langchain_docs),
-        "store_path": store_path
+        "store_path": store_path,
+        "version": INDEX_VERSION
     }
 
 
@@ -325,10 +380,12 @@ def load_vector_store(
 ) -> FAISS:
     """
     Load an existing FAISS vector store from disk for a given document.
+    Validates index existence, metadata version, and vector dimensionality.
     """
     store_path = get_document_vector_store_path(document_id)
     faiss_file = os.path.join(store_path, "index.faiss")
     pkl_file = os.path.join(store_path, "index.pkl")
+    meta_file = os.path.join(store_path, "index_meta.json")
 
     if not os.path.exists(store_path) or not os.path.exists(faiss_file) or not os.path.exists(pkl_file):
         raise FileNotFoundError(
@@ -336,15 +393,39 @@ def load_vector_store(
         )
 
     embedding_model = get_embedding_model(model_name=model_name, api_key=api_key)
+    expected_dim = getattr(embedding_model, "dim", 768)
+
+    # Validate stored metadata if present
+    if os.path.exists(meta_file):
+        try:
+            with open(meta_file, "r", encoding="utf-8") as f:
+                meta_info = json.load(f)
+            stored_dim = meta_info.get("dimension")
+            if stored_dim is not None and stored_dim != expected_dim:
+                raise IncompatibleIndexError(
+                    f"FAISS index dimension mismatch for document '{document_id}': "
+                    f"stored index has {stored_dim}d, but current embedding model expects {expected_dim}d."
+                )
+        except IncompatibleIndexError:
+            raise
+        except Exception:
+            pass
 
     try:
-        return FAISS.load_local(
+        vs = FAISS.load_local(
             folder_path=store_path,
             embeddings=embedding_model,
             allow_dangerous_deserialization=True
         )
     except Exception as e:
         raise RuntimeError(f"Failed to load FAISS index for document '{document_id}': {str(e)}")
+
+    if hasattr(vs, "index") and hasattr(vs.index, "d") and vs.index.d != expected_dim:
+        raise IncompatibleIndexError(
+            f"FAISS index internal dimension ({vs.index.d}) does not match current embedding model ({expected_dim})."
+        )
+
+    return vs
 
 
 def search_similar_chunks(
@@ -356,6 +437,7 @@ def search_similar_chunks(
 ) -> List[Dict[str, Any]]:
     """
     Search a document's FAISS index for the top-k chunks most semantically similar to a query.
+    Enforces vector dimension verification and chunk deduplication.
     """
     if not query or not query.strip():
         raise ValueError("Search query cannot be empty.")
@@ -371,13 +453,31 @@ def search_similar_chunks(
         api_key=api_key
     )
 
+    # Validate vector dimensions before search
+    embedding_model = get_embedding_model(model_name=model_name, api_key=api_key)
+    query_vector = embedding_model.embed_query(query)
+    if hasattr(vector_store, "index") and hasattr(vector_store.index, "d"):
+        if len(query_vector) != vector_store.index.d:
+            raise ValueError(
+                f"Vector dimension mismatch: query vector is {len(query_vector)}d, "
+                f"but index expects {vector_store.index.d}d."
+            )
+
     try:
-        results_with_scores = vector_store.similarity_search_with_score(query, k=k)
+        results_with_scores = vector_store.similarity_search_with_score(query, k=k * 2)
     except Exception as e:
         raise RuntimeError(f"Similarity search failed: {str(e)}")
 
     results: List[Dict[str, Any]] = []
+    seen_texts = set()
+
     for doc, score in results_with_scores:
+        cleaned_text = doc.page_content.strip()
+        text_fingerprint = cleaned_text[:200]
+        if text_fingerprint in seen_texts:
+            continue
+        seen_texts.add(text_fingerprint)
+
         meta = doc.metadata or {}
         results.append({
             "text": doc.page_content,
@@ -387,5 +487,7 @@ def search_similar_chunks(
             "document_id": meta.get("document_id", document_id),
             "score": round(float(score), 4)
         })
+        if len(results) >= k:
+            break
 
     return results
