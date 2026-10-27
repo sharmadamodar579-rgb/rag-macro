@@ -3,115 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aethelgard — Warm Editorial Study Room & RAG Library</title>
+    <title>AI College Study Assistant</title>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="landing-body">
-    <!-- Navigation Masthead -->
+<body>
     <header class="navbar">
         <div class="logo">
-            <div class="logo-icon-wrapper">
-                <span class="logo-icon">📖</span>
-            </div>
-            <div class="logo-text-group">
-                <span class="brand-title">Aethelgard</span>
-                <span class="brand-subtitle">Reading & Study Room</span>
-            </div>
+            <span class="logo-icon">📚</span>
+            <h1>AI Study Assistant</h1>
         </div>
         <nav>
-            <a href="index.html" class="nav-link active">Overview</a>
-            <a href="login.html" class="nav-link">Reader Pass</a>
-            <a href="dashboard.html" class="btn btn-primary btn-sm">Open Workspace →</a>
+            <a href="index.html" class="nav-link active">Home</a>
+            <a href="login.html" class="nav-link">Login</a>
+            <a href="dashboard.html" class="btn btn-primary">Dashboard</a>
         </nav>
     </header>
 
-    <!-- Main Hero Experience -->
-    <main class="hero-container">
-        <section class="hero-section">
-            <div class="hero-badge-wrapper">
-                <span class="hero-badge">
-                    <span class="badge-dot"></span>
-                    <span class="badge-text">Academic RAG Reading Library</span>
-                </span>
-            </div>
-
-            <h1 class="hero-title">
-                A Quiet, Focused Workspace for
-                <span class="gradient-text">Your College Texts</span>
-            </h1>
-
-            <p class="hero-description">
-                Transform dense lecture notes, course readers, and textbook chapters into a paper-inspired study desk.
-                Synthesize chapter digests, master practice recall, and converse with your materials with exact page citations and zero distraction.
-            </p>
-
+    <main class="hero-section">
+        <div class="hero-content">
+            <span class="badge">AI-Powered RAG Learning</span>
+            <h2>Master Your College Notes with Intelligent AI</h2>
+            <p>Upload your lecture notes, textbooks, and PDFs. Ask questions, generate summaries, and test your knowledge with MCQs powered by Retrieval-Augmented Generation.</p>
+            
             <div class="hero-actions">
-                <a href="dashboard.html" class="btn btn-primary btn-lg">
-                    <span>Enter Study Library</span>
-                    <span>→</span>
-                </a>
-                <a href="login.html" class="btn btn-secondary btn-lg">
-                    <span>Sign In / Register</span>
-                </a>
-                <button id="check-api-btn" class="btn btn-ghost btn-lg">
-                    <span>⚡ System Desk</span>
-                </button>
+                <a href="dashboard.html" class="btn btn-primary">Get Started</a>
+                <button id="check-api-btn" class="btn btn-secondary">Check Backend Status</button>
             </div>
 
             <!-- API Status Indicator -->
             <div id="api-status-card" class="status-card">
                 <span class="status-dot"></span>
-                <span id="api-status-text">Connecting to reading room services...</span>
+                <span id="api-status-text">Checking backend connection...</span>
             </div>
-        </section>
-
-        <!-- Feature Pillars Grid -->
-        <section class="features-section">
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon-box">
-                        <span>🔍</span>
-                    </div>
-                    <h3>Grounded Semantic Retrieval</h3>
-                    <p>Vectorized with local 768-dimensional FAISS indexing. Every insight is strictly anchored to your uploaded notes with exact page references.</p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon-box">
-                        <span>📝</span>
-                    </div>
-                    <h3>Editorial Study Summaries</h3>
-                    <p>Distills lengthy academic chapters into high-yield exam takeaways, key terminology definitions, and structured revision points.</p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon-box">
-                        <span>🎯</span>
-                    </div>
-                    <h3>Self-Assessment Quizzes</h3>
-                    <p>Targeted multiple-choice assessments with plausible distractors, instant feedback, and contextual source page citations.</p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon-box">
-                        <span>⭐</span>
-                    </div>
-                    <h3>Exam Question Prioritization</h3>
-                    <p>Identifies and ranks exam revision questions by curriculum priority, complete with conceptual answer guides.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- Footer -->
-        <footer class="landing-footer">
-            <p>A quiet digital reading library designed for students. 100% Free, Private, and Secure.</p>
-        </footer>
+        </div>
     </main>
 
-    <!-- Scripts -->
     <script src="js/main.js"></script>
 </body>
 </html>

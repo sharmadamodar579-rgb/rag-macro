@@ -102,35 +102,35 @@ document.addEventListener("DOMContentLoaded", () => {
                     item.innerHTML = `
                         <div>
                             <div class="doc-item-title">
-                                <span>📖</span>
+                                <span>📄</span>
                                 <span title="${escapeHtml(doc.filename)}">${escapeHtml(doc.filename)}</span>
                             </div>
                             <div class="doc-item-meta">
-                                <span>${doc.chunk_count || 0} excerpts</span> • 
+                                <span>${doc.chunk_count || 0} chunks</span> •
                                 <span>${
-                                    doc.status === "indexed" ? '<span style="color: var(--accent-sage); font-weight: 600;">Indexed</span>' :
-                                    doc.status === "ocr_required" ? '<span style="color: var(--accent-ochre); font-weight: 600;" title="Scanned or image-only PDF. OCR required to extract text.">OCR Required</span>' :
-                                    doc.status === "failed" ? `<span style="color: var(--accent-rust); font-weight: 600;" title="${escapeHtml(doc.error_message || 'Processing failed')}">Failed</span>` :
-                                    doc.status === "processing" ? '<span style="color: var(--accent-terracotta); font-weight: 600;">Cataloging...</span>' :
-                                    '<span style="color: var(--accent-navy); font-weight: 600;">Deposited</span>'
+                                    doc.status === "indexed" ? '<span style="color: #10b981; font-weight: 500;">Indexed</span>' :
+                                    doc.status === "ocr_required" ? '<span style="color: #f59e0b; font-weight: 500;" title="Scanned or image-only PDF. OCR required to extract text.">OCR Required</span>' :
+                                    doc.status === "failed" ? `<span style="color: #ef4444; font-weight: 500;" title="${escapeHtml(doc.error_message || 'Processing failed')}">Failed</span>` :
+                                    doc.status === "processing" ? '<span style="color: #3b82f6; font-weight: 500;">Processing</span>' :
+                                    '<span style="color: #8b5cf6; font-weight: 500;">Uploaded</span>'
                                 }</span>
                             </div>
                         </div>
                         <div class="doc-item-actions">
                             <button class="btn btn-sm btn-secondary select-doc-btn" data-id="${doc.id}" data-name="${escapeHtml(doc.filename)}">
-                                ${doc.id === currentDocumentId ? "Reading" : "Open"}
+                                ${doc.id === currentDocumentId ? "Active" : "Select"}
                             </button>
                             <button class="btn btn-sm btn-secondary summary-doc-btn" data-id="${doc.id}" data-name="${escapeHtml(doc.filename)}" title="Generate AI Study Summary">
-                                📝 Summary
+                                ⚡ Summary
                             </button>
-                            <button class="btn btn-sm btn-accent mcq-doc-btn" data-id="${doc.id}" data-name="${escapeHtml(doc.filename)}" title="Generate Practice Quiz">
-                                🎯 Quiz
+                            <button class="btn btn-sm btn-accent mcq-doc-btn" data-id="${doc.id}" data-name="${escapeHtml(doc.filename)}" title="Generate Practice MCQs">
+                                🎯 MCQs
                             </button>
                             <button class="btn btn-sm btn-warning questions-doc-btn" data-id="${doc.id}" data-name="${escapeHtml(doc.filename)}" title="Generate Important Exam Questions">
-                                ⭐ Exam Qs
+                                ⭐ Questions
                             </button>
-                            <button class="btn btn-sm btn-danger delete-doc-btn" data-id="${doc.id}" data-name="${escapeHtml(doc.filename)}" title="Delete volume">
-                                ✕
+                            <button class="btn btn-sm btn-danger delete-doc-btn" data-id="${doc.id}" data-name="${escapeHtml(doc.filename)}" title="Delete document">
+                                🗑️
                             </button>
                         </div>
                     `;
