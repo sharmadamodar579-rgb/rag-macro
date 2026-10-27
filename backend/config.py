@@ -59,8 +59,29 @@ class Config:
     )
     CORS_ORIGINS = [orig.strip() for orig in _raw_cors.split(",") if orig.strip()]
 
-    # API Key for Google Gemini AI service
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+    # AI Provider Configuration: 'openrouter' or 'gemini'
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+    _raw_gemini_key = os.getenv("GEMINI_API_KEY", "")
+
+    # If an OpenRouter key (sk-or-...) is placed in GEMINI_API_KEY, auto-assign it
+    if _raw_gemini_key.startswith("sk-or-") and not OPENROUTER_API_KEY:
+        OPENROUTER_API_KEY = _raw_gemini_key
+
+    # Active AI key for backward-compatible route access
+    GEMINI_API_KEY = _raw_gemini_key or OPENROUTER_API_KEY
+
+    # Auto-detect AI provider if not explicitly configured
+    _configured_provider = os.getenv("AI_PROVIDER", "").strip().lower()
+    if _configured_provider:
+        AI_PROVIDER = _configured_provider
+    elif OPENROUTER_API_KEY:
+        AI_PROVIDER = "openrouter"
+    else:
+        AI_PROVIDER = "gemini"
+
+    # OpenRouter Model Configuration (Default strictly to free router: openrouter/free)
+    OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openrouter/free")
+    OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 
     # Gemini model for text generation / chat
     GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")

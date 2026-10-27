@@ -136,15 +136,27 @@ Copy-Item .env.example .env
 cp .env.example .env
 ```
 
-Open `.env` and set your configuration:
-```ini
-# Google Gemini API Key
-GEMINI_API_KEY=your_actual_gemini_api_key_here
+Open `.env` and configure your chosen AI provider:
 
-# AI Models
+#### Option A: OpenRouter (100% Free Model Routing)
+```ini
+AI_PROVIDER=openrouter
+OPENROUTER_API_KEY=sk-or-v1-your_openrouter_api_key_here
+OPENROUTER_MODEL=openrouter/free
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+```
+> **Note**: When `openrouter` is active, the system automatically routes all LLM generations (Q&A, summaries, MCQs, questions) strictly through free models (`openrouter/free`) and uses fast local offline embeddings for FAISS vector search.
+
+#### Option B: Google Gemini
+```ini
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your_actual_gemini_api_key_here
 GEMINI_MODEL=gemini-1.5-flash
 EMBEDDING_MODEL=models/text-embedding-004
+```
 
+#### Common Settings
+```ini
 # Environment Mode
 FLASK_ENV=development
 FLASK_DEBUG=False

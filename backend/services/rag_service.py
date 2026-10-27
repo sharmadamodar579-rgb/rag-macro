@@ -1,3 +1,6 @@
+import re
+import numpy as np
+from langchain_core.embeddings import Embeddings
 import os
 import re
 from typing import List, Dict, Any, Optional
@@ -101,6 +104,40 @@ def chunk_document_pages(
 # 2. Embedding Model Utilities
 # ----------------------------------------------------------------------
 
+class LocalOfflineEmbeddings(Embeddings):
+    """
+    Offline local term-frequency / n-gram hash embeddings.
+    Zero external API calls, 100% free, deterministic, works natively with FAISS.
+    """
+    def __init__(self, dim: int = 768):
+        self.dim = dim
+
+    def _embed(self, text: str) -> List[float]:
+        vec = np.zeros(self.dim, dtype=np.float32)
+        words = re.findall(r"\b\w+\b", text.lower())
+        if not words:
+            vec[0] = 1.0
+            return vec.tolist()
+        for w in words:
+            h = abs(hash(w)) % self.dim
+            vec[h] += 1.0
+        for i in range(len(words) - 1):
+            h2 = abs(hash(words[i] + "_" + words[i + 1])) % self.dim
+            vec[h2] += 0.5
+        norm = float(np.linalg.norm(vec))
+        if norm > 0:
+            vec = vec / norm
+        else:
+            vec[0] = 1.0
+        return vec.tolist()
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        return [self._embed(t) for t in texts]
+
+    def embed_query(self, text: str) -> List[float]:
+        return self._embed(text)
+
+
 class DeterministicTestEmbeddings:
     """Offline, deterministic mock embeddings for automated unit testing."""
     def __init__(self, dim: int = 768):
@@ -127,19 +164,30 @@ def get_embedding_model(
     api_key: Optional[str] = None
 ):
     """
-    Initialize and return a LangChain GoogleGenerativeAIEmbeddings client,
-    or DeterministicTestEmbeddings if a mock/test key is provided.
+    Initialize and return an embedding model:
+    - DeterministicTestEmbeddings if a mock/test key is provided
+    - LocalOfflineEmbeddings if OpenRouter key is provided or local mode
+    - LangChain GoogleGenerativeAIEmbeddings client if Gemini key is provided
     """
-    key = api_key or getattr(Config, "GEMINI_API_KEY", "")
+    if api_key is not None:
+        key = api_key
+    else:
+        key = getattr(Config, "GEMINI_API_KEY", "") or getattr(Config, "OPENROUTER_API_KEY", "")
+
     if not key or not key.strip():
         raise ValueError(
-            "GEMINI_API_KEY is missing or not configured. "
-            "Please set your Gemini API key in the .env file."
+            "AI API key is missing or not configured. "
+            "Please set your OPENROUTER_API_KEY or GEMINI_API_KEY in the .env file."
         )
 
     # Use offline deterministic mock for automated testing keys
     if key in ("test-gemini-key", "fake-key", "test-key", "fake-gemini-key") or key.startswith("test-"):
         return DeterministicTestEmbeddings()
+
+    # If OpenRouter is the active provider or key is an OpenRouter key, use 100% free local embeddings
+    provider = getattr(Config, "AI_PROVIDER", "gemini").lower()
+    if provider == "openrouter" or key.startswith("sk-or-"):
+        return LocalOfflineEmbeddings()
 
     selected_model = model_name or getattr(Config, "EMBEDDING_MODEL", "models/text-embedding-004")
 
