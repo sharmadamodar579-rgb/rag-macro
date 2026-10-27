@@ -3,28 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In - AI College Study Assistant</title>
+    <title>Reader Pass — Aethelgard Study Library</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body class="auth-body">
-    <!-- Live Wallpaper Ambient Canvas -->
-    <canvas id="bg-canvas" class="live-wallpaper-canvas" aria-hidden="true"></canvas>
-
-    <!-- Ambient Volumetric Lighting Glows -->
-    <div class="ambient-glow ambient-glow-1" aria-hidden="true"></div>
-    <div class="ambient-glow ambient-glow-2" aria-hidden="true"></div>
-
     <div class="auth-wrapper">
         <div class="auth-card">
             <div class="auth-header">
-                <div class="logo-icon-wrapper" style="margin: 0 auto 1rem auto; width: 56px; height: 56px;">
-                    <span class="logo-icon" style="font-size: 1.75rem;">🎓</span>
+                <div class="logo-icon-wrapper" style="margin: 0 auto 1.25rem auto; width: 50px; height: 50px;">
+                    <span class="logo-icon" style="font-size: 1.5rem;">📖</span>
                 </div>
-                <h2 id="auth-title">Welcome to Studio</h2>
-                <p id="auth-subtitle">Sign in to access your documents and study history</p>
+                <h2 id="auth-title">Library Reader Pass</h2>
+                <p id="auth-subtitle">Sign in to access your personal study collection and notes</p>
             </div>
 
             <!-- Status Message -->
@@ -38,7 +31,7 @@
             <!-- Login Form -->
             <form id="login-form" class="auth-form">
                 <div class="form-group">
-                    <label for="login-email">Email or Username</label>
+                    <label for="login-email">Reader Email or Username</label>
                     <input type="text" id="login-email" placeholder="student@college.edu" required autocomplete="username">
                 </div>
 
@@ -47,9 +40,9 @@
                     <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
                 </div>
 
-                <button type="submit" id="login-btn" class="btn btn-primary btn-block btn-glow">
-                    <span>Sign In</span>
-                    <span class="btn-arrow">→</span>
+                <button type="submit" id="login-btn" class="btn btn-primary btn-block">
+                    <span>Sign In to Library</span>
+                    <span>→</span>
                 </button>
             </form>
 
@@ -61,30 +54,29 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="reg-email">Email Address</label>
+                    <label for="reg-email">College Email Address</label>
                     <input type="email" id="reg-email" placeholder="student@college.edu" required autocomplete="email">
                 </div>
 
                 <div class="form-group">
-                    <label for="reg-password">Password (min 6 chars)</label>
+                    <label for="reg-password">Password (min 6 characters)</label>
                     <input type="password" id="reg-password" placeholder="••••••••" required autocomplete="new-password">
                 </div>
 
-                <button type="submit" id="register-btn" class="btn btn-primary btn-block btn-glow">
-                    <span>Create Account</span>
-                    <span class="btn-arrow">→</span>
+                <button type="submit" id="register-btn" class="btn btn-primary btn-block">
+                    <span>Create Reader Pass</span>
+                    <span>→</span>
                 </button>
             </form>
 
             <div class="auth-footer">
-                <p id="toggle-auth-text">Don't have an account? <a href="#" id="toggle-auth-btn">Register</a></p>
-                <p><a href="index.html">← Back to Overview</a></p>
+                <p id="toggle-auth-text">New student? <a href="#" id="toggle-auth-btn">Register for a reader pass</a></p>
+                <p><a href="index.html">← Return to Reading Room Overview</a></p>
             </div>
         </div>
     </div>
 
     <!-- Scripts -->
-    <script src="js/wallpaper.js"></script>
     <script src="js/auth.js"></script>
 </body>
 </html>
