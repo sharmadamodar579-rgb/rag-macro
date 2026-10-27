@@ -2,6 +2,7 @@ services:
   - type: web
     name: ai-college-study-assistant
     runtime: python
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: python backend/wsgi.py
     envVars:
